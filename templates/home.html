@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% from "_bits.html" import cover, post_card %}
+
+{% block content %}
+
+{#
+  carousel of featured cafes. it's just a row you can swipe sideways -
+  "scroll-snap" in the css makes it stop neatly on each slide.
+  the little dots underneath get updated by the script at the bottom.
+#}
+<section class="carousel-box">
+  <div class="carousel" id="carousel">
+    {% for cafe in featured %}
+      <a class="slide" href="{{ url_for('cafe_page', cafe_id=cafe.id) }}">
+        <div class="slide-img">{{ cover(cafe) }}</div>
+        <span class="slide-name">{{ cafe.name }} · {{ cafe.area }}</span>
+      </a>
+    {% endfor %}
+  </div>
+  <div class="dots" id="dots">
+    {% for cafe in featured %}<span class="{{ 'on' if loop.first }}"></span>{% endfor %}
+  </div>
+</section>
+
+{# where the "post something" placeholders send you: the post page, or sign up first #}
+{% set post_link = url_for('new_post') if g.user else url_for('auth.signup') %}
+
+{#
+  WHAT'S NEW = the newest posts from everyone, as a sideways row.
+  if there aren't at least 3 posts yet, the rest of the row is filled with
+  dashed placeholder boxes so the section never looks broken/empty.
+#}
+<div class="section-head">
+  <h2>What's New!</h2>
+  <a href="{{ url_for('feed') }}" title="see all posts">→</a>
+</div>
+<div class="side-scroll">
+  {% for p in newest_posts %}
+    <a class="new-tile" href="{{ url_for('cafe_page', cafe_id=p.cafe_id) }}#comments">
+      <img src="{{ url_for('static', filename='uploads/' ~ p.photo) }}" alt="">
+      <span class="new-tile-text">
+        <b>@{{ p.author or p.username }}</b>
+        {{ p.body | truncate(40) }}
+      </span>
+    </a>
+  {% endfor %}
+
+  {# range(3 - n) = how many placeholders we still need to make 3 boxes #}
+  {% for i in range(3 - newest_posts | length) %}
+    <a class="new-tile placeholder" href="{{ post_link }}">
+      <span class="placeholder-plus">+</span>
+      <span class="new-tile-text">{{ "post your oshikatsu!" if loop.first else "coming soon..." }}</span>
+    </a>
+  {% endfor %}
+</div>
+
+{# FROM PEOPLE YOU FOLLOW = only posts by people you follow #}
+<div class="section-head">
+  <h2>From People You Follow</h2>
+  <a href="{{ url_for('feed', tab='following') }}" title="see more">→</a>
+</div>
+
+{% for p in following_posts %}
+  {{ post_card(p) }}
+{% else %}
+  {# placeholder card, with a message that depends on why it's empty #}
+  <div class="post placeholder-post">
+    <div class="placeholder-img">
+      <span class="placeholder-plus">♡</span>
+    </div>
+    <p>
+      {% if not g.user %}
+        <a href="{{ url_for('auth.login', next=request.path) }}">Log in</a> to see posts from people you follow.
+      {% else %}
+        You're not following anyone yet! Tap someone's name on a post to visit their profile and follow them.
+        <br><a href="{{ url_for('feed', tab='explore') }}">find people in Explore →</a>
+      {% endif %}
+    </p>
+  </div>
+{% endfor %}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // light up the dot for whichever slide is showing
+  const track = document.getElementById("carousel");
+  const dots = document.querySelectorAll("#dots span");
+  if (track) {
+    track.addEventListener("scroll", () => {
+      const i = Math.round(track.scrollLeft / track.clientWidth);
+      dots.forEach((d, n) => d.classList.toggle("on", n === i));
+    });
+  }
+</script>
+{% endblock %}

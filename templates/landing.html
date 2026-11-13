@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Oshi Collective</title>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+{#
+  the welcome screen. it doesn't use base.html because it has no top bar or
+  bottom nav - just the stars and the logo, like the first figma frame.
+#}
+<body class="landing">
+  {# the stars are one svg shape reused 3 times at different sizes/spots #}
+  <svg width="0" height="0" style="position:absolute">
+    <defs>
+      <path id="star" d="m50 4 13.5 28 30.7 4.3-22.3 21.4 5.4 30.4L50 73.6 22.7 88.1l5.4-30.4L5.8 36.3l30.7-4.3z"/>
+    </defs>
+  </svg>
+  <svg class="big-star s1" viewBox="0 0 100 100"><use href="#star"/></svg>
+  <svg class="big-star s2" viewBox="0 0 100 100"><use href="#star"/></svg>
+  <svg class="big-star s3" viewBox="0 0 100 100"><use href="#star"/></svg>
+
+  {# messages like "logged out" / "account deleted" (landing doesn't use base.html, so it needs its own) #}
+  {% with messages = get_flashed_messages() %}
+    {% for m in messages %}<p class="flash landing-flash">{{ m }}</p>{% endfor %}
+  {% endwith %}
+
+  <div class="landing-middle">
+    <h1 class="logo">Oshi<span>collective</span></h1>
+    <p>for melbourne's oshikatsu lovers</p>
+
+    <a class="btn" href="{{ url_for('home') }}">GET STARTED!</a>
+    <p class="landing-login">
+      <a href="{{ url_for('auth.signup') }}">make an account</a> ·
+      <a href="{{ url_for('auth.login') }}">log in</a>
+    </p>
+  </div>
+</body>
+</html>

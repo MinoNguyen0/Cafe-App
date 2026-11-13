@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{# "with context" lets the macros see saved_ids (to colour in the hearts) #}
+{% from "_bits.html" import cafe_card, post_card with context %}
+{% block title %}Saved · Oshi Collective{% endblock %}
+
+{% block content %}
+
+<nav class="tabs saved-tabs">
+  <a href="{{ url_for('saved') }}" class="{{ 'active' if tab == 'cafes' }}">Saved cafés</a>
+  <a href="{{ url_for('saved', tab='posts') }}" class="{{ 'active' if tab == 'posts' }}">Liked posts</a>
+</nav>
+
+{% if tab == "cafes" %}
+  <div class="grid">
+    {% for cafe in items %}{{ cafe_card(cafe) }}{% endfor %}
+  </div>
+  {% if not items %}
+    <p class="empty">
+      no saved cafés yet - tap the heart on a café to keep it here.
+      <br><a href="{{ url_for('cafes') }}">browse cafés →</a>
+    </p>
+  {% endif %}
+
+{% else %}
+  {% for p in items %}
+    {{ post_card(p) }}
+  {% else %}
+    <p class="empty">
+      no liked posts yet - tap the heart on a post in the feed.
+      <br><a href="{{ url_for('feed') }}">go to the feed →</a>
+    </p>
+  {% endfor %}
+{% endif %}
+
+{% endblock %}

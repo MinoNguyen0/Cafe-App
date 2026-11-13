@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Sign up · Oshi Collective{% endblock %}
+
+{% block content %}
+{% set f = form or {} %}
+<div class="auth-box">
+  <h1>Join Oshi Collective</h1>
+
+  <form class="box" method="post" action="{{ url_for('auth.signup') }}">
+    {{ csrf_input() }}
+    <label>username
+      <input name="username" required minlength="3" maxlength="20" pattern="[A-Za-z0-9_.]+"
+             autocomplete="username" value="{{ f.username }}">
+    </label>
+    <p class="hint">3-20 letters, numbers, _ or .</p>
+
+    {# autocomplete="new-password" tells password managers to suggest a new one #}
+    <label>password <input type="password" name="password" required minlength="6" autocomplete="new-password"></label>
+    <label>password again <input type="password" name="password2" required minlength="6" autocomplete="new-password"></label>
+
+    <label>your oshis (optional)
+      <input name="oshis" placeholder="Kaito, Seiji" value="{{ f.oshis }}">
+    </label>
+    <p class="hint">separate with commas. used for the "Your Oshis" tab</p>
+
+    <button class="btn">sign up</button>
+  </form>
+
+  <p>already have an account? <a href="{{ url_for('auth.login') }}">log in</a></p>
+</div>
+{% endblock %}

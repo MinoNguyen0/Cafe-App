@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% from "_bits.html" import avatar %}
+{% block title %}@{{ profile.username }} · Oshi Collective{% endblock %}
+
+{% block content %}
+{% set is_me = g.user and g.user.id == profile.id %}
+
+<section class="profile-head">
+  {{ avatar(profile.username, profile.avatar, "big") }}
+  <div>
+    <h1>@{{ profile.username }}</h1>
+    <p class="profile-stats">
+      <b>{{ stats.reviews }}</b> reviews ·
+      <b>{{ stats.followers }}</b> followers ·
+      <b>{{ stats.following }}</b> following
+    </p>
+    {% if profile.bio %}<p>{{ profile.bio }}</p>{% endif %}
+    <p class="tags">
+      {% for o in profile.oshis | tags %}<span class="oshi-tag">{{ o }}</span>{% endfor %}
+    </p>
+
+    {% if is_me %}
+      <div class="account-links">
+        {% if profile.is_admin %}<a class="admin-tag" href="{{ url_for('admin.dashboard') }}">admin page</a>{% endif %}
+        <a class="link-btn" href="{{ url_for('auth.change_password') }}">change password</a>
+        <a class="link-btn danger" href="{{ url_for('auth.delete_account') }}">delete account</a>
+        {# same "are you sure?" popup as the delete buttons (base.html) #}
+        <form method="post" action="{{ url_for('auth.logout') }}"
+              data-confirm="Log out of @{{ g.user.username }}? You'll need your password to log back in."
+              data-confirm-yes="log out">
+          {{ csrf_input() }}
+          <button class="link-btn">log out</button>
+        </form>
+      </div>
+    {% elif g.user %}
+      <form method="post" action="{{ url_for('toggle_follow', username=profile.username) }}">
+        {{ csrf_input() }}
+        <button class="btn {{ 'outline' if is_following }}">{{ 'following ✓' if is_following else 'follow' }}</button>
+      </form>
+    {% else %}
+      <a class="btn" href="{{ url_for('auth.login', next=request.path) }}">log in to follow</a>
+    {% endif %}
+  </div>
+</section>
+
+{% if is_me %}
+  {# <details> = click to open, no javascript needed #}
+  <details class="box">
+    <summary><b>edit profile</b></summary>
+    {# enctype="multipart/form-data" is needed because this form can upload a picture #}
+    {# data-confirm = the "are you sure?" popup from base.html #}
+    <form method="post" action="{{ url_for('edit_profile') }}" enctype="multipart/form-data"
+          data-confirm="Save the changes to your profile? Everyone can see your oshis, bio and picture."
+          data-confirm-yes="save">
+      {{ csrf_input() }}
+
+      <div class="avatar-edit">
+        {# id="avatar-preview" so the script below can swap in the picture you choose #}
+        <span id="avatar-preview">{{ avatar(profile.username, profile.avatar, "big") }}</span>
+        <div>
+          <label>profile picture <input type="file" name="avatar" accept="image/*" id="avatar-input"></label>
+          {% if profile.avatar %}
+            <label class="checkbox"><input type="checkbox" name="remove_avatar" value="1"
+                 data-confirm-note="Your profile picture will be removed."> remove my picture</label>
+          {% endif %}
+        </div>
+      </div>
+
+      <label>your oshis <input name="oshis" value="{{ profile.oshis or '' }}" placeholder="Kaito, Seiji"></label>
+      <label>bio <textarea name="bio" rows="2" maxlength="300">{{ profile.bio or '' }}</textarea></label>
+      <button class="btn">save</button>
+    </form>
+  </details>
+{% endif %}
+
+<h3>posts</h3>
+<div class="photo-grid">
+  {% for p in posts %}
+    <a href="{{ url_for('cafe_page', cafe_id=p.cafe_id) }}#comments" title="{{ p.cafe_name }}">
+      <img src="{{ url_for('static', filename='uploads/' ~ p.photo) }}" alt="{{ p.body }}">
+    </a>
+  {% else %}
+    <p class="empty">no posts yet</p>
+  {% endfor %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // show the picture you picked straight away, before you press save.
+  // URL.createObjectURL makes a temporary link to the file on your computer -
+  // nothing is uploaded until the form is submitted.
+  const input = document.getElementById("avatar-input");
+  if (input) {
+    input.addEventListener("change", () => {
+      const file = input.files[0];
+      if (!file) return;
+      document.getElementById("avatar-preview").innerHTML =
+        `<img class="avatar big" src="${URL.createObjectURL(file)}" alt="">`;
+    });
+  }
+</script>
+{% endblock %}

@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Log in · Oshi Collective{% endblock %}
+
+{% block content %}
+<div class="auth-box">
+  <h1>Welcome back!</h1>
+
+  <form class="box" method="post" action="{{ url_for('auth.login') }}">
+    {{ csrf_input() }}
+    {# where to go after logging in (the page that asked you to log in) #}
+    <input type="hidden" name="next" value="{{ next }}">
+
+    <label>username <input name="username" required autocomplete="username" value="{{ username }}"></label>
+    <label>password <input type="password" name="password" required autocomplete="current-password"></label>
+    <button class="btn">log in</button>
+  </form>
+
+  <p>new here? <a href="{{ url_for('auth.signup') }}">make an account</a></p>
+</div>
+{% endblock %}

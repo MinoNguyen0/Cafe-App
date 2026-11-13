@@ -1,0 +1,69 @@
+{#
+  the filter bar + List/Map switch, shared by cafes.html and map.html.
+  use it with:
+      {% set view = "cafes" %}   (or "map_page")
+      {% include "_filters.html" %}
+
+  `keep` and `top_toggle` come from filter_cafes() in app.py:
+    keep       = the filters that are switched on right now, e.g. {"area": "CBD"}
+    top_toggle = the same, but with "top rated" flipped on/off
+  passing them to url_for(...) builds links that keep your filters, so
+  switching List <-> Map or toggling top rated never loses what you picked.
+#}
+
+{# drawn svg icons (not emoji) so they look the same on every phone #}
+<div class="view-switch">
+  <a href="{{ url_for('cafes', **keep) }}" class="{{ 'active' if view == 'cafes' }}">
+    <svg viewBox="0 0 24 24"><line x1="5" y1="7" x2="19" y2="7"/><line x1="5" y1="12" x2="19" y2="12"/><line x1="5" y1="17" x2="19" y2="17"/></svg>
+    list
+  </a>
+  <a href="{{ url_for('map_page', **keep) }}" class="{{ 'active' if view == 'map_page' }}">
+    <svg viewBox="0 0 24 24"><path d="M12 21s-6-6-6-11a6 6 0 0 1 12 0c0 5-6 11-6 11z"/><circle cx="12" cy="10" r="2"/></svg>
+    map
+  </a>
+</div>
+
+<script>
+  // remember list or map, so the cafes icon in the bottom nav opens the
+  // same one next time (base.html reads this)
+  try { localStorage.setItem("cafeView", "{{ 'list' if view == 'cafes' else 'map' }}"); } catch {}
+</script>
+
+{#
+  each dropdown submits the form as soon as you pick something
+  (onchange="this.form.submit()"), so there's no "apply" button.
+  the hidden inputs carry along the search + sort, otherwise picking a
+  location would quietly switch "top rated" off.
+#}
+<form class="filters" method="get" action="{{ url_for(view) }}">
+  {% if current.q %}<input type="hidden" name="q" value="{{ current.q }}">{% endif %}
+  {% if current.sort %}<input type="hidden" name="sort" value="{{ current.sort }}">{% endif %}
+
+  <select name="cuisine" onchange="this.form.submit()" class="{{ 'active' if current.cuisine }}">
+    <option value="">cuisine &gt;</option>
+    {% for c in cuisines %}<option value="{{ c }}" {{ 'selected' if c == current.cuisine }}>{{ c }}</option>{% endfor %}
+  </select>
+
+  <select name="colour" onchange="this.form.submit()" class="{{ 'active' if current.colour }}">
+    <option value="">colours &gt;</option>
+    {% for name in oshi_colours %}<option value="{{ name }}" {{ 'selected' if name == current.colour }}>{{ name }}</option>{% endfor %}
+  </select>
+
+  <select name="area" onchange="this.form.submit()" class="{{ 'active' if current.area }}">
+    <option value="">location &gt;</option>
+    {% for a in areas %}<option value="{{ a }}" {{ 'selected' if a == current.area }}>{{ a }}</option>{% endfor %}
+  </select>
+
+  {# top rated is a link that flips the sort on/off and keeps everything else #}
+  <a class="filter-link {{ 'active' if current.sort == 'top' }}" href="{{ url_for(view, **top_toggle) }}">top rated &gt;</a>
+</form>
+
+{# shows what's switched on, with one tap to clear it all #}
+{% if keep %}
+  <p class="active-filters">
+    {% if current.q %}<span>"{{ current.q }}"</span>{% endif %}
+    {% for key in ("cuisine", "colour", "area") if current[key] %}<span>{{ current[key] }}</span>{% endfor %}
+    {% if current.sort == "top" %}<span>top rated</span>{% endif %}
+    <a href="{{ url_for(view) }}">✕ clear</a>
+  </p>
+{% endif %}

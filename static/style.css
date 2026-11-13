@@ -1,0 +1,631 @@
+/*
+  style.css - all the colours are up here as variables so you can
+  re-theme the whole site by changing just these few lines.
+  (colours were picked from the mockup)
+*/
+:root {
+  --yellow: #fde99a;
+  --blue: #b9d3fb;
+  --blue-light: #dce9fd;
+  --navy: #2b3350;
+  --star: #fcd34d;
+  --star-off: #b9d3fb;
+  --bg: #ffffff;
+  --grey: #8a8fa3;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--navy);
+  font-family: "Space Mono", monospace;
+  font-size: 14px;
+  padding-bottom: 90px; /* room so the bottom nav doesn't cover the last cards */
+}
+
+h1, h2, h3 { font-family: "Fredoka", sans-serif; }
+a { color: inherit; }
+
+main {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+.icon {
+  width: 28px; height: 28px;
+  fill: none; stroke: var(--navy); stroke-width: 2;
+  stroke-linecap: round; stroke-linejoin: round;
+}
+.icon.fill { fill: var(--blue); }
+
+
+/* ---- top bar ---- */
+.topbar {
+  background: var(--yellow);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  position: sticky; top: 0; z-index: 10;
+}
+.search { flex: 1; display: flex; align-items: center; gap: 8px; }
+.topbar .search input {
+  flex: 1; min-width: 0;
+  margin: 0; padding: 0;
+  border: none; background: transparent;
+  font: inherit; font-size: 15px; color: var(--navy);
+  outline: none;
+}
+.search input::placeholder { color: var(--grey); }
+
+.flash {
+  max-width: 900px; margin: 12px auto 0; padding: 10px 16px;
+  background: var(--blue-light); border-radius: 12px;
+}
+
+
+/* ---- filter row ---- */
+.filters {
+  display: flex; gap: 8px;
+  overflow-x: auto;           /* scrolls sideways on small phones */
+  padding: 12px 0;
+  scrollbar-width: none;      /* hide the scrollbar, still swipeable */
+}
+.filters select,
+.filters button {
+  font: inherit; color: var(--navy);
+  border: none; background: transparent;
+  padding: 4px 8px; border-radius: 6px;
+  cursor: pointer;
+  appearance: none;           /* hides the default dropdown arrow */
+  white-space: nowrap;
+}
+.filters .active { background: var(--blue); }
+
+
+/* ---- cafe cards ---- */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 22px;
+}
+
+.card {
+  display: block;
+  text-decoration: none;
+  border-radius: 26px;
+  overflow: hidden;
+  background: var(--blue);
+  transition: transform .15s;
+}
+.card:hover { transform: translateY(-3px); }
+
+.card-img { position: relative; aspect-ratio: 1 / 0.9; }
+.card-img img,
+.cafe-cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+/* placeholder when there's no photo: palette colours as vertical stripes */
+.no-photo { display: flex; width: 100%; height: 100%; }
+.no-photo span { flex: 1; }
+
+.heart {
+  position: absolute; top: 8px; left: 8px;
+  background: none; border: none; padding: 4px; cursor: pointer;
+  line-height: 0;
+}
+.heart svg {
+  width: 24px; height: 24px;
+  fill: transparent;           /* empty heart = just the white outline */
+  stroke: #fff; stroke-width: 2; stroke-linejoin: round;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,.35));  /* so it shows on light photos too */
+  transition: transform .15s;
+}
+.heart:hover svg { transform: scale(1.1); }
+.heart.on svg { fill: #ff8fab; stroke: #ff8fab; }
+
+.rating-strip {
+  background: var(--navy);
+  text-align: center;
+  padding: 2px 0;
+}
+
+.card-info { padding: 8px 14px 14px; }
+.card-info h2 { font-size: 15px; margin: 0 0 4px; }
+.card-info p { margin: 0; font-size: 12px; }
+
+
+/* stars + palette dots (used on cards and the cafe page) */
+.stars span { color: var(--star-off); font-size: 20px; }
+.stars span.on { color: var(--star); }
+
+.palette { display: flex; justify-content: center; gap: 8px; margin-top: 10px; }
+.palette span {
+  width: 14px; height: 14px;
+  border-radius: 3px;
+  border: 1px solid rgba(0,0,0,.08);
+}
+.palette.big { justify-content: flex-start; gap: 10px; }
+.palette.big span { width: 46px; height: 46px; border-radius: 12px; }
+
+
+/* ---- single cafe page ---- */
+.back { display: inline-block; margin: 14px 0 4px; text-decoration: none; }
+
+.cafe-head {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  align-items: start;
+}
+.cafe-cover { border-radius: 26px; overflow: hidden; aspect-ratio: 1; border: 3px solid var(--blue); }
+.cafe-meta h1 { margin: 0 0 4px; }
+.cafe-meta p { margin: 4px 0; }
+.cafe-meta h3 { margin: 18px 0 8px; }
+.hexes { color: var(--grey); font-size: 12px; white-space: pre; }
+
+.tags span {
+  display: inline-block; margin: 0 4px 4px 0; padding: 2px 10px;
+  background: var(--blue-light); border-radius: 99px; font-size: 12px;
+}
+
+.gallery { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 6px; }
+.gallery img { height: 140px; border-radius: 16px; display: block; }
+
+.box {
+  background: var(--blue-light);
+  border-radius: 22px;
+  padding: 16px 18px;
+  margin: 24px 0;
+}
+.box h3 { margin-top: 0; }
+
+label, .label { display: block; margin-bottom: 10px; font-size: 13px; }
+input[type=text], input[type=password], input:not([type]), textarea, .box select {
+  display: block; width: 100%;
+  margin-top: 4px; padding: 8px 10px;
+  font: inherit; color: var(--navy);
+  border: 2px solid var(--blue); border-radius: 10px;
+  background: #fff;
+}
+.row { display: flex; gap: 12px; }
+.row label { flex: 1; }
+
+.btn {
+  font-family: "Fredoka", sans-serif; font-size: 16px;
+  background: var(--yellow); color: var(--navy);
+  border: none; border-radius: 99px;
+  padding: 8px 26px; cursor: pointer;
+}
+.btn:hover { filter: brightness(.96); }
+
+/*
+  star picker trick:
+  the radios are in the html as 5,4,3,2,1 but row-reverse shows them as
+  1,2,3,4,5. "~" in css means "every sibling AFTER this one", which (because
+  of the reverse) is every star visually to the LEFT. so hovering star 3
+  lights up 1, 2 and 3.
+*/
+.star-pick { display: inline-flex; flex-direction: row-reverse; margin-bottom: 10px; }
+.star-pick input { display: none; }
+.star-pick label { font-size: 30px; color: var(--star-off); cursor: pointer; margin: 0; }
+.star-pick input:checked ~ label,
+.star-pick label:hover,
+.star-pick label:hover ~ label { color: var(--star); }
+
+.colour-pick { display: flex; gap: 10px; margin-bottom: 14px; }
+.colour-pick input {
+  width: 56px; height: 56px; padding: 0;
+  border: none; border-radius: 12px; background: none; cursor: pointer;
+}
+
+.comment {
+  border-bottom: 2px dashed var(--blue-light);
+  padding: 12px 0;
+}
+.comment-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.comment-top .stars span { font-size: 15px; }
+.comment p { margin: 6px 0; white-space: pre-line; }
+.comment img { max-width: 260px; width: 100%; border-radius: 14px; display: block; }
+.comment small { color: var(--grey); }
+
+/* the row under each comment: date + delete/hide/report */
+.comment-bottom { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-top: 6px; }
+.comment-bottom form { margin: 0; }
+.comment-bottom small.warn { color: #d9534f; }
+
+/* buttons that look like small text links */
+.link-btn {
+  background: none; border: none; padding: 0;
+  font: inherit; font-size: 12px; color: var(--grey);
+  text-decoration: underline; cursor: pointer;
+}
+.link-btn:hover { color: var(--navy); }
+.link-btn.danger:hover { color: #d9534f; }
+
+.report summary { list-style: none; }               /* hide the little ▶ arrow */
+.report summary::-webkit-details-marker { display: none; }
+.report[open] form { display: flex; gap: 8px; align-items: center; margin-top: 6px; }
+.report select { font: inherit; font-size: 12px; border: 2px solid var(--blue); border-radius: 8px; }
+
+/* hidden comments shrink down to one grey line */
+.comment.collapsed {
+  display: flex; gap: 10px; align-items: center;
+  color: var(--grey); font-size: 12px; font-style: italic;
+}
+.comment.collapsed form { margin: 0; }
+
+.you-tag {
+  background: var(--blue); padding: 1px 8px;
+  border-radius: 99px; font-size: 12px;
+}
+.oshi-tag {
+  background: var(--yellow); padding: 1px 8px;
+  border-radius: 99px; font-size: 12px;
+}
+
+.empty { color: var(--grey); }
+
+
+/* ---- bottom nav ---- */
+.bottomnav {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  background: var(--yellow);
+  display: flex; justify-content: space-around;
+  padding: 12px 0 16px;
+}
+.bottomnav .icon { width: 34px; height: 34px; }
+.bottomnav .here .icon.fill { fill: var(--navy); }   /* the page you're on */
+.bottomnav .here .icon.fill line { stroke: #fff; }    /* keeps the feed icon's lines visible */
+
+
+
+/* ---- bits shared by the new pages ---- */
+.hint { font-size: 12px; color: var(--grey); margin: -6px 0 10px; }
+.btn { display: inline-block; text-decoration: none; }
+.btn.outline { background: #fff; border: 2px solid var(--yellow); }
+
+/* round letter avatar (we don't have profile pictures yet) */
+.avatar {
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 50%; background: var(--blue); color: var(--navy);
+  font-family: "Fredoka", sans-serif; text-decoration: none;
+  border: 2px solid var(--navy);
+}
+.avatar.small { width: 32px; height: 32px; font-size: 16px; }
+.avatar.big { width: 86px; height: 86px; font-size: 42px; flex-shrink: 0; }
+
+
+/* ---- landing page ---- */
+body.landing {
+  background: var(--blue);
+  min-height: 100vh; padding: 0;
+  overflow: hidden; position: relative;
+  display: flex; align-items: center; justify-content: center;
+}
+.big-star { position: absolute; fill: var(--yellow); stroke: #fff; stroke-width: 3; stroke-linejoin: round; }
+.big-star.s1 { width: 70px;  top: 8%;  left: 20%; transform: rotate(-12deg); }
+.big-star.s2 { width: 230px; top: 4%;  right: -40px; transform: rotate(10deg); }
+.big-star.s3 { width: 150px; top: 30%; left: -40px; transform: rotate(-20deg); }
+
+.landing-middle { position: relative; text-align: center; margin-top: 120px; padding: 0 16px; }
+.logo {
+  font-size: 84px; line-height: .9; margin: 0;
+  color: var(--blue-light);
+  -webkit-text-stroke: 3px #fff;
+  paint-order: stroke fill;
+}
+.logo span {
+  display: block; font-size: 30px; letter-spacing: 2px;
+  color: var(--yellow); -webkit-text-stroke: 1.5px #fff;
+  margin-top: -8px;
+}
+.landing-middle p { margin: 28px 0; }
+.landing-login { font-size: 12px; }
+
+
+/* ---- home page ---- */
+.carousel-box {
+  background: var(--blue); border-radius: 22px;
+  padding: 12px 12px 8px; margin-top: 14px;
+}
+.carousel {
+  display: flex; overflow-x: auto;
+  scroll-snap-type: x mandatory;   /* snaps to one slide at a time */
+  scrollbar-width: none;
+  border-radius: 16px;
+}
+.slide { flex: 0 0 100%; scroll-snap-align: center; text-decoration: none; text-align: center; }
+.slide-img { aspect-ratio: 16 / 8; border-radius: 16px; overflow: hidden; }
+.slide-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.slide-name { display: block; font-size: 11px; font-weight: 700; margin-top: 6px; text-decoration: underline; }
+
+.dots { display: flex; justify-content: center; gap: 6px; padding-top: 6px; }
+.dots span { width: 7px; height: 7px; border-radius: 50%; background: #fff; }
+.dots span.on { background: var(--navy); }
+
+.section-head { display: flex; justify-content: space-between; align-items: baseline; margin-top: 22px; }
+.section-head h2 { margin: 0 0 10px; font-size: 20px; }
+.section-head a { text-decoration: none; font-size: 22px; }
+
+/* sideways scrolling row of cafe cards */
+.side-scroll { display: flex; gap: 14px; overflow-x: auto; padding-bottom: 8px; scrollbar-width: none; scroll-snap-type: x proximity; }
+.side-scroll .card { flex: 0 0 170px; scroll-snap-align: start; }
+
+
+/* ---- feed ---- */
+.tabs { display: flex; justify-content: space-between; gap: 4px; padding: 12px 0; overflow-x: auto; scrollbar-width: none; }
+.tabs a { text-decoration: none; padding: 3px 6px; border-radius: 6px; white-space: nowrap; font-size: 12px; }
+.tabs a.active { background: var(--blue); }
+
+.post {
+  border: 3px solid var(--blue); border-radius: 22px;
+  overflow: hidden; margin-bottom: 18px;
+}
+.post-img { position: relative; }
+.post-img img { width: 100%; max-height: 520px; object-fit: cover; display: block; }
+.post-star {
+  position: absolute; top: 8px; left: 10px;
+  font-size: 34px; color: var(--star);
+  -webkit-text-stroke: 1.5px #fff;
+}
+.post-info { display: flex; background: var(--blue-light); }
+.post-text { flex: 1; padding: 10px 14px; min-width: 0; }
+.post-text p { margin: 4px 0; }
+.post-text small { color: var(--grey); font-size: 11px; }
+.post-top { display: flex; justify-content: space-between; gap: 8px; }
+.post-top a { text-decoration: none; }
+
+.post-actions {
+  background: var(--blue);
+  display: flex; flex-direction: column; justify-content: center; gap: 10px;
+  padding: 8px 10px;
+}
+.post-actions form { margin: 0; }
+.icon-btn {
+  display: flex; align-items: center; gap: 2px;
+  background: none; border: none; padding: 0; cursor: pointer;
+  font: inherit; font-size: 11px; color: var(--navy); text-decoration: none;
+}
+.icon-btn svg { width: 22px; height: 22px; fill: none; stroke: var(--navy); stroke-width: 2; stroke-linejoin: round; }
+.icon-btn.liked svg { fill: #ff8fab; stroke: #ff8fab; }
+
+/* the floating + button */
+.fab {
+  position: fixed; right: 20px; bottom: 90px;
+  width: 58px; height: 58px; border-radius: 50%;
+  background: var(--yellow); border: 3px solid #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,.2);
+  display: flex; align-items: center; justify-content: center;
+  font-family: "Fredoka", sans-serif; font-size: 38px; text-decoration: none;
+}
+
+
+/* ---- login / signup ---- */
+.auth-box { max-width: 420px; margin: 30px auto; }
+.auth-box > p { text-align: center; }
+
+
+/* ---- profile ---- */
+.profile-head { display: flex; gap: 18px; align-items: flex-start; margin-top: 20px; }
+.profile-head h1 { margin: 0; }
+.profile-head p { margin: 4px 0; }
+.profile-head form { margin-top: 8px; }
+.profile-stats { font-size: 12px; }
+.box summary { cursor: pointer; }
+
+.photo-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.photo-grid img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 10px; display: block; }
+
+/* phones: one column on the cafe page, stack form fields */
+@media (max-width: 600px) {
+  .cafe-head { grid-template-columns: 1fr; }
+  .row { flex-direction: column; gap: 0; }
+  .grid { grid-template-columns: 1fr 1fr; gap: 14px; }
+}
+
+
+/* ---- home: What's New tiles + placeholders ---- */
+.new-tile {
+  flex: 0 0 150px;
+  scroll-snap-align: start;
+  border-radius: 20px; overflow: hidden;
+  background: var(--blue);
+  text-decoration: none;
+  display: flex; flex-direction: column;
+}
+.new-tile img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; }
+.new-tile-text { padding: 8px 10px; font-size: 11px; line-height: 1.4; }
+.new-tile-text b { display: block; }
+
+/* dashed "nothing here yet" boxes */
+.new-tile.placeholder,
+.placeholder-post {
+  background: var(--blue-light);
+  border: 3px dashed var(--blue);
+}
+.new-tile.placeholder { align-items: center; justify-content: center; text-align: center; min-height: 190px; }
+.placeholder-plus {
+  font-family: "Fredoka", sans-serif; font-size: 44px; line-height: 1;
+  color: var(--blue);
+}
+.placeholder-img {
+  aspect-ratio: 16 / 7;
+  display: flex; align-items: center; justify-content: center;
+}
+.placeholder-post p { margin: 0; padding: 12px 16px; font-size: 13px; text-align: center; }
+
+
+/* ---- profile pictures ---- */
+/* the same .avatar class works for a photo (<img>) or a letter (<span>) */
+img.avatar { object-fit: cover; padding: 0; background: #fff; }
+.avatar.tiny { width: 24px; height: 24px; font-size: 12px; border-width: 1.5px; }
+.avatar-link { display: flex; text-decoration: none; }
+
+/* @name with a little picture in front, on posts and comments */
+.who { display: inline-flex; align-items: center; gap: 6px; text-decoration: none; color: inherit; }
+
+.avatar-edit { display: flex; gap: 16px; align-items: center; margin: 12px 0; }
+.checkbox { display: flex; align-items: center; gap: 6px; font-size: 12px; }
+
+
+/* ---- maps ---- */
+.map-wrap { position: relative; }
+.cafe-map {
+  height: 62vh; min-height: 360px;
+  border-radius: 22px; border: 3px solid var(--blue);
+  z-index: 0;            /* keeps the map under the sticky top bar */
+}
+.mini-map { height: 220px; border-radius: 22px; border: 3px solid var(--blue); z-index: 0; }
+.pick-map { height: 260px; border-radius: 16px; border: 2px solid var(--blue); z-index: 0; margin-bottom: 4px; }
+.map-count { display: block; margin-top: 8px; }
+.map-tools { margin: 0 0 14px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.hint-inline { font-size: 12px; color: var(--grey); }
+
+.near-me {
+  position: absolute; right: 12px; bottom: 16px; z-index: 500;
+  background: var(--yellow); border: 2px solid #fff; border-radius: 99px;
+  padding: 6px 14px; font: inherit; font-size: 12px; color: var(--navy);
+  box-shadow: 0 2px 6px rgba(0,0,0,.2); cursor: pointer;
+}
+
+/* the round pie-chart pins in the cafe's palette colours */
+.palette-pin span {
+  display: block; border-radius: 50%;
+  border: 3px solid var(--navy);
+  box-shadow: 0 2px 5px rgba(0,0,0,.35);
+}
+
+.pin-popup { display: flex; flex-direction: column; gap: 2px; font-family: "Space Mono", monospace; }
+.pin-popup b { font-family: "Fredoka", sans-serif; font-size: 15px; }
+.pin-popup .palette { justify-content: flex-start; margin: 4px 0; }
+.leaflet-popup-content-wrapper { border-radius: 16px; }
+
+.plain-list { padding-left: 18px; }
+.plain-list small { color: var(--grey); }
+
+
+/* ---- cafe page: edit link + social links ---- */
+.cafe-topline { display: flex; justify-content: space-between; align-items: center; }
+.cafe-links { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.cafe-links a {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--blue-light); border-radius: 99px;
+  padding: 4px 12px; font-size: 12px; text-decoration: none;
+}
+.cafe-links a:hover { background: var(--blue); }
+.cafe-links svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+
+/* ---- List / Map switch (top of /cafes and /map) ---- */
+.view-switch {
+  display: flex; width: fit-content;
+  margin: 14px auto 0;
+  background: var(--blue-light); border-radius: 99px; padding: 4px;
+}
+.view-switch a {
+  padding: 6px 18px; border-radius: 99px;
+  text-decoration: none; font-size: 13px;
+}
+.view-switch a.active { background: var(--navy); color: #fff; }
+
+/* top rated is a link now, styled like the dropdowns next to it */
+.filter-link { padding: 4px 8px; border-radius: 6px; text-decoration: none; white-space: nowrap; }
+.filter-link.active { background: var(--blue); }
+
+/* the "what's switched on" row under the filters */
+.active-filters { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 0 0 6px; font-size: 12px; }
+.active-filters span { background: var(--yellow); padding: 1px 10px; border-radius: 99px; }
+.active-filters a { color: var(--grey); }
+
+.account-links { display: flex; gap: 14px; align-items: center; margin-top: 8px; }
+.account-links form { margin: 0; }
+
+/* a bit tighter so all 4 filters fit on a phone */
+.filters { gap: 2px; }
+.filters select, .filters .filter-link { font-size: 13px; padding: 4px 6px; }
+
+
+/* icons inside the list/map switch + near me button */
+.view-switch a { display: inline-flex; align-items: center; gap: 6px; }
+.view-switch svg, .near-me svg {
+  width: 16px; height: 16px;
+  fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+}
+.near-me { display: inline-flex; align-items: center; gap: 6px; }
+
+/* save heart next to the cafe name */
+.cafe-title { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.save-btn { background: none; border: none; padding: 4px; cursor: pointer; flex-shrink: 0; }
+.save-btn svg { width: 30px; height: 30px; fill: transparent; stroke: var(--navy); stroke-width: 2; stroke-linejoin: round; transition: transform .15s; }
+.save-btn:hover svg { transform: scale(1.1); }
+.save-btn.on svg { fill: #ff8fab; stroke: #ff8fab; }
+
+.saved-tabs { justify-content: center; gap: 12px; }
+.saved-tabs a { font-size: 14px; }
+
+/* delete account page */
+.danger-box { border: 2px solid #f4b4b4; background: #fff4f4; }
+.danger-box ul { padding-left: 20px; margin: 6px 0 10px; }
+.btn.danger { background: #f8c9c9; }
+.btn.danger:hover { background: #f4b4b4; }
+.account-links { flex-wrap: wrap; }
+
+.landing-flash { position: absolute; top: 16px; left: 16px; right: 16px; z-index: 2; text-align: center; }
+
+
+/* ---- duplicate check on the add cafe form ---- */
+.dup-box { border: 2px solid var(--yellow); background: #fffbe8; }
+.dup-box h3 { margin-top: 0; }
+.similar-live {
+  background: #fffbe8; border: 2px dashed var(--yellow);
+  border-radius: 14px; padding: 10px 12px; margin: -4px 0 12px; font-size: 13px;
+}
+.dup-item {
+  display: flex; align-items: center; gap: 10px;
+  background: #fff; border-radius: 12px; padding: 8px 10px; margin-top: 8px;
+  text-decoration: none;
+}
+.dup-item:hover { background: var(--blue-light); }
+.dup-item small { color: var(--grey); }
+.dup-dots { display: flex; gap: 3px; flex-shrink: 0; }
+.dup-dots span { width: 12px; height: 12px; border-radius: 3px; border: 1px solid rgba(0,0,0,.1); }
+.dup-go { margin-left: auto; font-size: 12px; white-space: nowrap; text-decoration: underline; }
+
+
+/* ---- admin ---- */
+.admin-box { border: 2px dashed var(--navy); background: #f7f8fc; }
+.admin-box h3 { margin-top: 0; }
+.admin-box form { margin-bottom: 10px; }
+.admin-h { display: flex; align-items: center; gap: 8px; margin-top: 26px; }
+.admin-h .count { background: var(--yellow); border-radius: 99px; padding: 0 10px; font-size: 14px; }
+.admin-item { margin: 12px 0; }
+.admin-item-top { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+.admin-item ul { padding-left: 18px; margin: 8px 0; }
+.admin-item small { color: var(--grey); }
+.admin-actions { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+.admin-actions form { margin: 0; }
+.admin-thumb { max-width: 160px; border-radius: 10px; display: block; margin-bottom: 6px; }
+.admin-tag { background: var(--navy); color: #fff; padding: 1px 8px; border-radius: 99px; font-size: 11px; }
+
+.cafe-report { margin: 14px 0 0; }
+.cafe-report[open] form { flex-wrap: wrap; }
+.cafe-report input { flex: 1; min-width: 160px; margin: 0; }
+
+
+/* ---- the "are you sure?" popup ---- */
+.confirm-dialog {
+  border: 3px solid var(--blue); border-radius: 22px;
+  padding: 20px 22px; max-width: min(420px, calc(100vw - 32px));
+  color: var(--navy); font-family: "Space Mono", monospace;
+  box-shadow: 0 10px 30px rgba(0,0,0,.25);
+}
+.confirm-dialog::backdrop { background: rgba(43, 51, 80, .45); }   /* dims the page behind */
+.confirm-title { font-family: "Fredoka", sans-serif; font-size: 20px; margin: 0 0 8px; }
+.confirm-text { margin: 0 0 18px; line-height: 1.5; }
+.confirm-buttons { display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
+
+/* delete link at the bottom of your own posts */
+.post-delete { margin: 4px 0 0; }

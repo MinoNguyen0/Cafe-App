@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}New post · Oshi Collective{% endblock %}
+
+{% block content %}
+{% set f = form or {} %}
+
+<h1>New post</h1>
+
+<form class="box" method="post" enctype="multipart/form-data">
+  {{ csrf_input() }}
+
+  <label>which cafe?
+    <select name="cafe_id" required>
+      <option value="">pick one...</option>
+      {% for c in cafes %}
+        {# str() because the form sends text but the database id is a number #}
+        <option value="{{ c.id }}" {{ 'selected' if f.cafe_id == c.id | string }}>{{ c.name }} ({{ c.area }})</option>
+      {% endfor %}
+    </select>
+  </label>
+  <p class="hint">not there? <a href="{{ url_for('add_cafe') }}">add the cafe</a> first</p>
+
+  <label>photo <input type="file" name="photo" accept="image/*" required></label>
+  <label>your oshi <input name="oshi" maxlength="60" placeholder="who did you bring along?" value="{{ f.oshi }}"></label>
+
+  <div class="star-pick">
+    {% for n in [5, 4, 3, 2, 1] %}
+      <input type="radio" name="rating" value="{{ n }}" id="r{{ n }}" required {{ 'checked' if f.rating == n | string }}>
+      <label for="r{{ n }}" title="{{ n }} star{{ 's' if n > 1 }}">★</label>
+    {% endfor %}
+  </div>
+
+  <label>caption <textarea name="body" rows="3" required maxlength="1000">{{ f.body }}</textarea></label>
+  <button class="btn">post</button>
+</form>
+{% endblock %}

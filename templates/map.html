@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% from "_bits.html" import stars %}
+{% block title %}Map · Oshi Collective{% endblock %}
+{% block head %}{% include "_map_head.html" %}{% endblock %}
+
+{% block content %}
+
+{# the List/Map switch + filters - shared with cafes.html, see _filters.html #}
+{% set view = "map_page" %}
+{% include "_filters.html" %}
+
+<div class="map-wrap">
+  <div id="cafe-map" class="cafe-map"></div>
+  <button type="button" class="near-me" id="near-me" title="show where I am">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.5" fill="currentColor"/><line x1="12" y1="1" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="23"/><line x1="1" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="23" y2="12"/></svg>
+    near me
+  </button>
+</div>
+<p class="hint-inline map-count">
+  {{ pins | length }} café{{ 's' if pins | length != 1 }} on the map
+</p>
+
+{% if not_on_map %}
+  <h3>not on the map yet</h3>
+  <p class="hint">these cafés don't have a pin yet - whoever added one can place it from "edit café"</p>
+  <ul class="plain-list">
+    {% for c in not_on_map %}
+      <li><a href="{{ url_for('cafe_page', cafe_id=c.id) }}">{{ c.name }}</a> <small>{{ c.address }}, {{ c.area }}</small></li>
+    {% endfor %}
+  </ul>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // the cafes from app.py. "| tojson" turns the python list into javascript
+  // safely (it escapes anything that could break out of the <script> tag)
+  const pins = {{ pins | tojson }};
+
+  const map = L.map("cafe-map");
+  addTiles(map);
+
+  // makes text safe to put inside the popup's html (a cafe called
+  // "<script>..." would otherwise run as code!)
+  const safe = text => String(text).replace(/[&<>"']/g, ch =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
+
+  pins.forEach(p => {
+    const dots = p.palette.map(c => `<span style="background:${safe(c)}"></span>`).join("");
+    const rating = p.rating ? `★ ${p.rating}` : "no reviews yet";
+
+    L.marker([p.lat, p.lng], { icon: palettePin(p.palette) })
+      .addTo(map)
+      .bindPopup(`
+        <div class="pin-popup">
+          <b>${safe(p.name)}</b>
+          <small>${safe(p.where)}</small>
+          <small>${rating}</small>
+          <div class="palette">${dots}</div>
+          <a href="${p.url}">see café ›</a>
+        </div>`);
+  });
+
+  // zoom the map so every pin fits. no pins -> just show the CBD
+  if (pins.length) {
+    map.fitBounds(pins.map(p => [p.lat, p.lng]), { padding: [40, 40], maxZoom: 16 });
+  } else {
+    map.setView(MELBOURNE, 14);
+  }
+
+  // "near me": the browser asks for permission, then we jump to where you are.
+  // your location never gets sent to our server - it only moves the map.
+  let youAreHere = null;
+  document.getElementById("near-me").addEventListener("click", () => {
+    if (!navigator.geolocation) return alert("Your browser can't share location :(");
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        const spot = [pos.coords.latitude, pos.coords.longitude];
+        if (youAreHere) youAreHere.remove();
+        youAreHere = L.circleMarker(spot, { radius: 9, color: "#2b3350", fillColor: "#64b5f6", fillOpacity: 1 })
+          .addTo(map).bindPopup("you are here");
+        map.setView(spot, 16);
+      },
+      () => alert("Couldn't get your location (did you say no to the permission?)")
+    );
+  });
+</script>
+{% endblock %}

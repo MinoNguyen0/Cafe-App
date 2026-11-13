@@ -1,0 +1,6 @@
+# stuff that should never go on github
+.venv/
+__pycache__/
+cafe.db
+secret_key.txt
+static/uploads/*

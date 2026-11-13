@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}Admin · Oshi Collective{% endblock %}
+
+{#
+  the admin page - only admins can open it (admin_required in admin.py).
+  two lists: reported cafes, and reported comments.
+#}
+{% block content %}
+<h1>Admin</h1>
+
+<h2 class="admin-h">reported cafés <span class="count">{{ cafe_reports | length }}</span></h2>
+{% for group in cafe_reports %}
+  <article class="box admin-item">
+    <div class="admin-item-top">
+      <a href="{{ url_for('cafe_page', cafe_id=group.id) }}"><b>{{ group.name }}</b></a>
+      <small>{{ group.area }}</small>
+    </div>
+    <ul>
+      {% for r in group.reports %}
+        <li>
+          <b>{{ r.reason }}</b>
+          {% if r.note %}- "{{ r.note }}"{% endif %}
+          <small>by @{{ r.reporter }}, {{ r.created_at | ago }}</small>
+        </li>
+      {% endfor %}
+    </ul>
+    <div class="admin-actions">
+      {# fixing it = open the cafe and use edit / merge / delete there #}
+      <a class="btn" href="{{ url_for('cafe_page', cafe_id=group.id) }}">open café to fix</a>
+      <form method="post" action="{{ url_for('admin.resolve_cafe_reports', cafe_id=group.id) }}"
+            data-confirm="Mark these reports as done? They'll leave this list (nothing gets deleted)." data-confirm-yes="mark done">
+        {{ csrf_input() }}
+        <button class="link-btn">mark as done</button>
+      </form>
+    </div>
+  </article>
+{% else %}
+  <p class="empty">no reported cafés ♡</p>
+{% endfor %}
+
+<h2 class="admin-h">reported comments <span class="count">{{ comment_reports | length }}</span></h2>
+<p class="hint">comments with {{ report_limit }}+ reports are already hidden from everyone until you decide.</p>
+{% for c in comment_reports %}
+  <article class="box admin-item">
+    <div class="admin-item-top">
+      <b>@{{ c.username }}</b>
+      <small>on <a href="{{ url_for('cafe_page', cafe_id=c.cafe_id) }}#comments">{{ c.cafe_name }}</a></small>
+    </div>
+    <p>{{ c.body }}</p>
+    {% if c.photo %}<img class="admin-thumb" src="{{ url_for('static', filename='uploads/' ~ c.photo) }}" alt="">{% endif %}
+    <p class="hint-inline">
+      {{ c.report_count }} report{{ 's' if c.report_count != 1 }}: {{ c.reasons }}
+      {% if c.report_count >= report_limit %} · <b>hidden for everyone</b>{% endif %}
+    </p>
+    <div class="admin-actions">
+      <form method="post" action="{{ url_for('delete_comment', comment_id=c.id) }}"
+            data-confirm="Remove {{ c.username }}'s comment? This can't be undone." data-confirm-yes="remove">
+        {{ csrf_input() }}
+        <button class="btn danger">remove comment</button>
+      </form>
+      <form method="post" action="{{ url_for('admin.dismiss_comment_reports', comment_id=c.id) }}"
+            data-confirm="Keep this comment and clear its reports? If it was hidden, everyone will see it again." data-confirm-yes="keep it">
+        {{ csrf_input() }}
+        <button class="link-btn">it's fine, keep it</button>
+      </form>
+    </div>
+  </article>
+{% else %}
+  <p class="empty">no reported comments ♡</p>
+{% endfor %}
+
+{% endblock %}

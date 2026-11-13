@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{# "with context" so the hearts know which cafes you saved (saved_ids) #}
+{% from "_bits.html" import cafe_card with context %}
+{% block title %}Cafés · Oshi Collective{% endblock %}
+
+{% block content %}
+
+{# the List/Map switch + filters - shared with map.html, see _filters.html #}
+{% set view = "cafes" %}
+{% include "_filters.html" %}
+
+<h1>{{ "Top rated!" if current.sort == "top" else "Results!" }}</h1>
+
+{% if not cafes %}
+  <p class="empty">Nothing matches that yet :( <a href="{{ url_for('cafes') }}">clear filters</a></p>
+{% endif %}
+
+<div class="grid">
+  {% for cafe in cafes %}
+    {{ cafe_card(cafe) }}
+  {% endfor %}
+</div>
+
+{% endblock %}

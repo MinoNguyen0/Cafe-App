@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Oshi Collective{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  {# pages that need extra css (like the map library) add it here #}
+  {% block head %}{% endblock %}
+</head>
+<body>
+  {% from "_bits.html" import avatar %}
+  {#
+    base.html = the shell every page shares (top search bar + bottom nav).
+    other templates say {% extends "base.html" %} and only fill in the
+    {% block content %} part. saves copy-pasting the header everywhere.
+
+    g.user is whoever is logged in (or None) - set in auth.py
+  #}
+
+  <header class="topbar">
+    <form class="search" action="{{ url_for('cafes') }}" method="get">
+      <svg viewBox="0 0 24 24" class="icon"><circle cx="10" cy="10" r="7"/><line x1="15" y1="15" x2="21" y2="21"/></svg>
+      <input type="text" name="q" value="{{ request.args.get('q', '') }}"
+             placeholder="search character, venue or user">
+    </form>
+
+    {% if g.user %}
+      <a href="{{ url_for('profile', username=g.user.username) }}" class="avatar-link" title="your profile">
+        {{ avatar(g.user.username, g.user.avatar) }}
+      </a>
+    {% else %}
+      <a href="{{ url_for('auth.login', next=request.path) }}" class="profile" title="log in">
+        <svg viewBox="0 0 24 24" class="icon"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="10" r="3.5"/><path d="M5.5 19c1.5-3 4-4 6.5-4s5 1 6.5 4"/></svg>
+      </a>
+    {% endif %}
+  </header>
+
+  {# flash() messages from app.py show up here #}
+  {% with messages = get_flashed_messages() %}
+    {% for m in messages %}<p class="flash">{{ m }}</p>{% endfor %}
+  {% endwith %}
+
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+
+  {#
+    bottom nav. request.endpoint is the name of the function that made this
+    page (e.g. "feed"), so we can colour in the icon for the page you're on.
+  #}
+  {% set here = request.endpoint %}
+  {# order: home, feed, cafés/map (middle - the main feature), saved, add #}
+  <nav class="bottomnav">
+    <a href="{{ url_for('home') }}" title="home" class="{{ 'here' if here == 'home' }}">
+      <svg viewBox="0 0 24 24" class="icon fill"><path d="M4 11 12 4l8 7v9h-5v-6H9v6H4z"/></svg>
+    </a>
+    <a href="{{ url_for('feed') }}" title="feed" class="{{ 'here' if here in ('feed', 'new_post') }}">
+      <svg viewBox="0 0 24 24" class="icon fill"><rect x="4" y="4" width="16" height="16" rx="4"/><line x1="4" y1="9.5" x2="20" y2="9.5"/><line x1="4" y1="14.5" x2="20" y2="14.5"/></svg>
+    </a>
+    {# cafes: opens the map OR the list, whichever you used last (see the script below) #}
+    <a href="{{ url_for('map_page') }}" id="nav-cafes" title="cafés"
+       class="{{ 'here' if here in ('map_page', 'cafes', 'cafe_page', 'edit_cafe') }}">
+      <svg viewBox="0 0 24 24" class="icon fill"><path d="M12 21s-6-6-6-11a6 6 0 0 1 12 0c0 5-6 11-6 11z"/><circle cx="12" cy="10" r="2" fill="#fff"/></svg>
+    </a>
+    <a href="{{ url_for('saved') }}" title="saved" class="{{ 'here' if here == 'saved' }}">
+      <svg viewBox="0 0 24 24" class="icon fill"><path d="m12 3 2.7 5.6 6.1.8-4.5 4.2 1.1 6.1L12 16.8 6.6 19.7l1.1-6.1-4.5-4.2 6.1-.8z"/></svg>
+    </a>
+    <a href="{{ url_for('add_cafe') }}" title="add a cafe" class="{{ 'here' if here == 'add_cafe' }}">
+      {# the shaved ice / dessert icon from the figma #}
+      <svg viewBox="0 0 24 24" class="icon fill"><path d="M6 11h12l-4.5 10h-3z"/><path d="M5 11a7 7 0 0 1 14 0z"/><line x1="12" y1="4" x2="14" y2="1.5"/></svg>
+    </a>
+  </nav>
+
+  {#
+    the "are you sure?" popup. any form with data-confirm="..." shows this
+    before it sends (see the script below). <dialog> is a built-in html popup.
+    method="dialog" = the buttons just close the popup and say which one was
+    pressed (value="yes" / "no") instead of sending anything.
+  #}
+  <dialog id="confirm-dialog" class="confirm-dialog">
+    <form method="dialog">
+      <p class="confirm-title">Are you sure?</p>
+      <p class="confirm-text"></p>
+      <div class="confirm-buttons">
+        {# autofocus on cancel = pressing Enter by accident cancels, it never deletes #}
+        <button value="no" class="btn outline" autofocus>cancel</button>
+        <button value="yes" class="btn danger confirm-yes">yes</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script>
+    // the csrf token, for the background requests below (see check_csrf in app.py)
+    const CSRF = "{{ session.get('csrf', '') }}";
+
+
+    // ---- "are you sure?" popup for anything that can't be undone ----
+    // usage: <form ... data-confirm="Delete this?" data-confirm-yes="delete">
+    // for merge, "{target}" in the text becomes whichever cafe is picked in the dropdown
+    const confirmBox = document.getElementById("confirm-dialog");
+
+    document.querySelectorAll("form[data-confirm]").forEach(form => {
+      form.addEventListener("submit", e => {
+        if (form.dataset.sure === "yes") return;   // already said yes - let it send
+        e.preventDefault();                         // stop it until they answer
+
+        let text = form.dataset.confirm;
+        const picked = form.querySelector("select[name=into]");
+        if (picked && picked.selectedOptions[0]) {
+          text = text.replaceAll("{target}", picked.selectedOptions[0].textContent.trim());
+        }
+        // ticked boxes can add a line, e.g. "remove my picture" on the profile form
+        form.querySelectorAll("[data-confirm-note]:checked").forEach(box => {
+          text += " " + box.dataset.confirmNote;
+        });
+
+        // very old browsers don't have <dialog> - use the plain browser popup instead
+        if (typeof confirmBox.showModal !== "function") {
+          if (confirm(text)) { form.dataset.sure = "yes"; form.submit(); }
+          return;
+        }
+
+        // textContent (not innerHTML) so a cafe name can never turn into html
+        confirmBox.querySelector(".confirm-text").textContent = text;
+        confirmBox.querySelector(".confirm-yes").textContent = form.dataset.confirmYes || "yes";
+        confirmBox.returnValue = "";
+        confirmBox.onclose = () => {
+          if (confirmBox.returnValue === "yes") {
+            form.dataset.sure = "yes";
+            form.requestSubmit();  // send it for real this time
+          }
+        };
+        confirmBox.showModal();
+      });
+    });
+
+    // NOTE: localStorage / sessionStorage = little notes the browser keeps for
+    // this site. they can be switched off (private mode etc.), so every use is
+    // wrapped in try {} - if it fails, the site still works, just without the extra.
+    const store = {
+      get(box, key) { try { return box.getItem(key); } catch { return null; } },
+      set(box, key, value) { try { box.setItem(key, value); } catch {} },
+    };
+
+
+    // ---- hearts on cafe cards = save the cafe to your account ----
+    async function saveCafe(cafeId, wantSaved) {
+      const form = new FormData();
+      form.append("csrf", CSRF);
+      form.append("saved", wantSaved ? "1" : "0");
+      const res = await fetch(`/cafe/${cafeId}/save`, {
+        method: "POST", body: form, headers: { "X-Requested-With": "fetch" },
+      });
+      const data = await res.json();
+      if (data.login) { window.location = data.login; return; }  // logged out -> log in first
+      // the same cafe can be on the page twice - update every heart for it
+      document.querySelectorAll(`[data-save="${cafeId}"]`).forEach(b => b.classList.toggle("on", data.saved));
+    }
+
+    document.querySelectorAll("[data-save]").forEach(btn => {
+      btn.addEventListener("click", e => {
+        e.preventDefault();   // the heart sits inside the card's link - don't open the cafe
+        e.stopPropagation();
+        saveCafe(btn.dataset.save, !btn.classList.contains("on"));
+      });
+    });
+
+    {% if g.user %}
+    // hearts used to be saved in the browser only ("fav-3" etc). move any old
+    // ones onto your account once, then forget them
+    try {
+      Object.keys(localStorage).filter(k => k.startsWith("fav-")).forEach(k => {
+        saveCafe(k.slice(4), true);
+        localStorage.removeItem(k);
+      });
+    } catch {}
+    {% endif %}
+
+
+    // ---- the cafes icon remembers list or map ----
+    // _filters.html saves "list" or "map" each time you open one of them
+    if (store.get(localStorage, "cafeView") === "list") {
+      document.getElementById("nav-cafes").href = "{{ url_for('cafes') }}";
+    }
+
+
+    // ---- "‹ back" on cafe pages goes to wherever you came from ----
+    // every page in this list remembers itself as "the last place you were".
+    // cafe pages aren't in the list, so going cafe -> edit -> cafe still
+    // takes you back to the map/feed/etc you started from.
+    const BACK_NAMES = { home: "home", feed: "feed", cafes: "list", map_page: "map", saved: "saved", profile: "profile" };
+    const page = "{{ request.endpoint }}";
+    if (page in BACK_NAMES) {
+      store.set(sessionStorage, "backTo", JSON.stringify({ url: location.pathname + location.search, name: BACK_NAMES[page] }));
+    }
+    const backLink = document.getElementById("back-link");
+    if (backLink) {
+      const last = JSON.parse(store.get(sessionStorage, "backTo") || "null");
+      if (last) {
+        backLink.href = last.url;
+        backLink.textContent = "‹ back to " + last.name;
+      }
+    }
+
+
+    // ---- like buttons on posts ----
+    // send the like in the background so the page doesn't reload or jump
+    // anywhere - the heart just turns pink and the number goes up.
+    document.querySelectorAll(".like-form").forEach(form => {
+      form.addEventListener("submit", async e => {
+        e.preventDefault();  // stop the normal "submit and reload the page"
+
+        const res = await fetch(form.action, {
+          method: "POST",
+          body: new FormData(form),                     // includes the csrf token
+          headers: { "X-Requested-With": "fetch" },     // tells app.py to answer with JSON
+        });
+        const data = await res.json();
+
+        if (data.login) {            // not logged in -> go to the login page
+          window.location = data.login;
+          return;
+        }
+        const btn = form.querySelector("button");
+        btn.classList.toggle("liked", data.liked);
+        btn.querySelector("span").textContent = data.count || "";
+      });
+    });
+  </script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

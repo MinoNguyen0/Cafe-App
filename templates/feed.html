@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% from "_bits.html" import post_card %}
+{% block title %}Feed · Oshi Collective{% endblock %}
+
+{% block content %}
+
+{# the 4 tabs. each one is just a link to /feed?tab=... #}
+<nav class="tabs">
+  {% for key, label in tabs.items() %}
+    <a href="{{ url_for('feed', tab=key) }}" class="{{ 'active' if key == tab }}">{{ label }}</a>
+  {% endfor %}
+</nav>
+
+{% if message == "login" %}
+  <p class="empty">
+    <a href="{{ url_for('auth.login', next=request.full_path) }}">Log in</a> or
+    <a href="{{ url_for('auth.signup') }}">make an account</a> to see this tab.
+  </p>
+{% elif message %}
+  <p class="empty">{{ message }}</p>
+{% endif %}
+
+{% for p in posts %}
+  {{ post_card(p) }}
+{% else %}
+  {% if not message %}<p class="empty">no posts yet - be the first!</p>{% endif %}
+{% endfor %}
+
+{# the yellow + button in the corner #}
+<a class="fab" href="{{ url_for('new_post') }}" title="new post">+</a>
+
+{% endblock %}

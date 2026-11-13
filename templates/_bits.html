@@ -1,0 +1,139 @@
+{#
+  small reusable pieces ("macros" = basically functions for html).
+  use them in another template with:
+      {% from "_bits.html" import stars, palette_dots %}
+      {{ stars(4.2) }}
+#}
+
+{% macro avatar(username, photo, size="small") %}
+  {#
+    round profile picture. no picture uploaded -> the first letter of the
+    username in a blue circle instead.
+    size is "tiny" (posts/comments), "small" (top bar) or "big" (profile page)
+  #}
+  {% if photo %}
+    <img class="avatar {{ size }}" src="{{ url_for('static', filename='uploads/' ~ photo) }}" alt="@{{ username }}">
+  {% else %}
+    <span class="avatar {{ size }}">{{ (username or '?')[0] | upper }}</span>
+  {% endif %}
+{% endmacro %}
+
+{% macro stars(rating) %}
+  {# rating can be None when a cafe has no reviews yet #}
+  {% set filled = (rating or 0) | round | int %}
+  <span class="stars" title="{{ '%.1f' % rating if rating else 'no reviews yet' }}">
+    {% for i in range(5) %}<span class="{{ 'on' if i < filled else '' }}">★</span>{% endfor %}
+  </span>
+{% endmacro %}
+
+{% macro palette_dots(palette, big=false) %}
+  <div class="palette {{ 'big' if big }}">
+    {% for c in palette.split(',') %}
+      <span style="background: {{ c }}" title="{{ c }}"></span>
+    {% endfor %}
+  </div>
+{% endmacro %}
+
+{% macro cover(cafe) %}
+  {# if there's no photo, show the cafe's colours as stripes instead #}
+  {% if cafe.cover %}
+    <img src="{{ url_for('static', filename='uploads/' ~ cafe.cover) }}" alt="{{ cafe.name }}">
+  {% else %}
+    <div class="no-photo">
+      {% for c in cafe.palette.split(',') %}<span style="background: {{ c }}"></span>{% endfor %}
+    </div>
+  {% endif %}
+{% endmacro %}
+
+{% macro cafe_card(cafe) %}
+  {# the blue card from the figma - used on /cafes and the home page #}
+  <a class="card" href="{{ url_for('cafe_page', cafe_id=cafe.id) }}">
+    <div class="card-img">
+      {{ cover(cafe) }}
+      {#
+        data-save = which cafe this heart saves. the script in base.html handles the click.
+        saved_ids comes from add_saved_ids() in app.py - so the template that
+        imports this macro needs "with context", or saved_ids won't exist here
+      #}
+      <button class="heart {{ 'on' if cafe.id in (saved_ids or []) }}" data-save="{{ cafe.id }}" title="save">
+
+        <svg viewBox="0 0 24 24"><path d="M12 20.5s-7.5-4.6-9.3-9.2C1.5 8.2 3.4 4.5 7 4.5c2.1 0 3.7 1.2 5 3 1.3-1.8 2.9-3 5-3 3.6 0 5.5 3.7 4.3 6.8-1.8 4.6-9.3 9.2-9.3 9.2z"/></svg>
+      </button>
+    </div>
+    <div class="rating-strip">{{ stars(cafe.avg_rating) }}</div>
+    <div class="card-info">
+      <h2>{{ cafe.name }} ›</h2>
+      <p>{{ cafe.address }}, {{ cafe.area }}</p>
+      <p>{{ cafe.tags }} {{ cafe.price }}</p>
+      {{ palette_dots(cafe.palette) }}
+    </div>
+  </a>
+{% endmacro %}
+
+{% macro post_card(p) %}
+  {#
+    one post in the feed (from the figma): photo, then a strip with the
+    caption on the left and like / comment / location buttons on the right.
+    id="post-123" lets the page jump back to this post after you press like.
+  #}
+  <article class="post" id="post-{{ p.id }}">
+    <div class="post-img">
+      <img src="{{ url_for('static', filename='uploads/' ~ p.photo) }}" alt="post by {{ p.username }}">
+      {% if p.rating >= 5 %}<span class="post-star" title="5 star visit!">★</span>{% endif %}
+    </div>
+
+    <div class="post-info">
+      <div class="post-text">
+        <div class="post-top">
+          {% if p.author %}
+            <a class="who" href="{{ url_for('profile', username=p.author) }}">
+              {{ avatar(p.author, p.author_avatar, "tiny") }} <b>@{{ p.author }}</b>
+            </a>
+          {% else %}
+            <span class="who">{{ avatar(p.username, none, "tiny") }} <b>@{{ p.username }}</b></span>
+          {% endif %}
+          <small>{{ p.created_at | ago }}</small>
+        </div>
+        <p>
+          {% if p.oshi %}<span class="oshi-tag">{{ p.oshi }}</span>{% endif %}
+          {{ p.body }}
+        </p>
+        <small>at {{ p.cafe_name }}, {{ p.cafe_area }}</small>
+
+        {#
+          delete your own post (or remove anyone's if you're admin).
+          data-confirm = the "are you sure?" popup from base.html.
+          the server checks again in delete_comment() in app.py - hiding the
+          button is just looks.
+        #}
+        {% if g.user and (p.user_id == g.user.id or g.user.is_admin) %}
+          {% set mine = p.user_id == g.user.id %}
+          <form method="post" action="{{ url_for('delete_comment', comment_id=p.id) }}" class="post-delete"
+                data-confirm="{{ 'Delete your post at ' ~ p.cafe_name ~ '? The photo and caption will be gone for good.' if mine
+                                else 'Remove @' ~ (p.author or p.username) ~ '\'s post as admin? This can\'t be undone.' }}"
+                data-confirm-yes="{{ 'delete post' if mine else 'remove' }}">
+            {{ csrf_input() }}
+            <button class="link-btn danger">{{ 'delete' if mine else 'remove (admin)' }}</button>
+          </form>
+        {% endif %}
+      </div>
+
+      <div class="post-actions">
+        {# class="like-form" -> the script in base.html sends this without reloading the page #}
+        <form method="post" action="{{ url_for('toggle_like', comment_id=p.id) }}" class="like-form">
+          {{ csrf_input() }}
+          <button class="icon-btn {{ 'liked' if p.liked_by_me }}" title="like">
+            <svg viewBox="0 0 24 24"><path d="M12 20.5s-7.5-4.6-9.3-9.2C1.5 8.2 3.4 4.5 7 4.5c2.1 0 3.7 1.2 5 3 1.3-1.8 2.9-3 5-3 3.6 0 5.5 3.7 4.3 6.8-1.8 4.6-9.3 9.2-9.3 9.2z"/></svg>
+            <span>{{ p.like_count or '' }}</span>
+          </button>
+        </form>
+        <a class="icon-btn" href="{{ url_for('cafe_page', cafe_id=p.cafe_id) }}#comments" title="comments">
+          <svg viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></svg>
+        </a>
+        <a class="icon-btn" href="{{ url_for('cafe_page', cafe_id=p.cafe_id) }}" title="the cafe">
+          <svg viewBox="0 0 24 24"><path d="M12 21s-6-6-6-11a6 6 0 0 1 12 0c0 5-6 11-6 11z"/><circle cx="12" cy="10" r="2"/></svg>
+        </a>
+      </div>
+    </div>
+  </article>
+{% endmacro %}

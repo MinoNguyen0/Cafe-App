@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Delete account · Oshi Collective{% endblock %}
+
+{% block content %}
+<div class="auth-box">
+  <h1>Delete account</h1>
+
+  <div class="box danger-box">
+    <p><b>This can't be undone.</b> Deleting @{{ g.user.username }} removes:</p>
+    <ul>
+      <li>your profile, profile picture and password</li>
+      <li>all your comments, posts and their photos</li>
+      <li>your likes, saved cafés and who you follow</li>
+    </ul>
+    <p class="hint">cafés you added stay on the site so other people's reviews aren't lost.</p>
+
+    {# data-confirm = the "are you sure?" popup (base.html) as a last check after the password + tick box #}
+    <form method="post" action="{{ url_for('auth.delete_account') }}"
+          data-confirm="Really delete @{{ g.user.username }}? Your profile, posts, photos, likes and saves will be gone forever. This can't be undone."
+          data-confirm-yes="yes, delete my account">
+      {{ csrf_input() }}
+      <label>type your password to confirm
+        <input type="password" name="password" required autocomplete="current-password">
+      </label>
+      <label class="checkbox">
+        <input type="checkbox" name="confirm" value="1" required> I understand everything will be deleted
+      </label>
+      <button class="btn danger">delete my account</button>
+      <a class="link-btn" href="{{ url_for('profile', username=g.user.username) }}">cancel</a>
+    </form>
+  </div>
+</div>
+{% endblock %}

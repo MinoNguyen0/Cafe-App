@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+{#
+  one form for both "add a cafe" and "edit a cafe".
+  cafe = the cafe being edited, or None when adding a new one.
+  form = what was typed, only when the last save had an error (so it refills).
+#}
+{% set editing = cafe is not none %}
+{% block title %}{{ 'Edit ' ~ cafe.name if editing else 'Add a café' }} · Oshi Collective{% endblock %}
+{% block head %}{% include "_map_head.html" %}{% endblock %}
+
+{% block content %}
+{% set f = form or cafe or {} %}
+{# the palette is saved as "#aaa,#bbb,#ccc" - split it for the 3 pickers #}
+{% set pal = cafe.palette.split(',') if editing and not form else [] %}
+
+<h1>{{ 'Edit ' ~ cafe.name if editing else 'Add a café' }}</h1>
+
+{#
+  "is it one of these?" - shown when you pressed save but the cafe looks
+  like one we already have (find_similar_cafes() in app.py).
+#}
+{% if matches %}
+  <section class="box dup-box">
+    <h3>Wait - is it one of these?</h3>
+    <p class="hint">these are already on Oshi Collective. if it's the same place, leave your review there instead ♡</p>
+    {% for m in matches %}
+      <a class="dup-item" href="{{ m.url }}">
+        <span class="dup-dots">{% for c in m.palette %}<span style="background: {{ c }}"></span>{% endfor %}</span>
+        <span><b>{{ m.name }}</b><br><small>{{ m.where }} · {{ m.why }}</small></span>
+        <span class="dup-go">yes, it's this one ›</span>
+      </a>
+    {% endfor %}
+    <p class="hint">different place (like another branch)? scroll down and press <b>add it anyway</b>.
+      {# file boxes can't be refilled by the browser, for safety #}
+      you'll need to pick the cover photo again.</p>
+  </section>
+{% endif %}
+
+<form class="box" method="post" enctype="multipart/form-data">
+  {{ csrf_input() }}
+  {# set after the "is it one of these?" warning, so the next save skips the check #}
+  {% if matches %}<input type="hidden" name="confirm_new" value="1">{% endif %}
+
+  <label>name <input name="name" id="cafe-name" required value="{{ f.name or '' }}" autocomplete="off"></label>
+
+  {# live version of the same check, filled in by the script below as you type #}
+  {% if not editing and not matches %}<div id="similar-live" class="similar-live" hidden></div>{% endif %}
+  <div class="row">
+    <label>street <input name="address" id="address" required placeholder="Swanston St" value="{{ f.address or '' }}"></label>
+    <label>area <input name="area" id="area" required placeholder="CBD" value="{{ f.area or '' }}"></label>
+  </div>
+  <div class="row">
+    <label>tags <input name="tags" placeholder="Café, Japanese" value="{{ f.tags or '' }}"></label>
+    <label>price <input name="price" placeholder="$-$$" value="{{ f.price or '' }}"></label>
+  </div>
+
+  {# ---- map pin ---- #}
+  <p class="label">where is it? <span class="hint-inline">tap the map or drag the pin</span></p>
+  <div id="pick-map" class="pick-map"></div>
+  <p class="map-tools">
+    <button type="button" class="link-btn" id="find-btn">find the street on the map</button>
+    <span id="find-msg" class="hint-inline"></span>
+  </p>
+  {# the map's script writes the pin's position into these hidden boxes #}
+  <input type="hidden" name="lat" id="lat" value="{{ f.lat if f.lat is not none else '' }}">
+  <input type="hidden" name="lng" id="lng" value="{{ f.lng if f.lng is not none else '' }}">
+
+  {# ---- links ---- #}
+  <p class="label">links (all optional)</p>
+  <label>website <input name="website" placeholder="nanasgreentea.com.au" value="{{ f.website or '' }}"></label>
+  <div class="row">
+    <label>instagram <input name="instagram" placeholder="@handle or paste the link" value="{{ f.instagram or '' }}"></label>
+    <label>tiktok <input name="tiktok" placeholder="@handle or paste the link" value="{{ f.tiktok or '' }}"></label>
+  </div>
+
+  {# ---- look ---- #}
+  <label>
+    cover photo {% if editing and cafe.cover %}<span class="hint-inline">(leave empty to keep the current one)</span>{% endif %}
+    <input type="file" name="cover" accept="image/*">
+  </label>
+
+  <p class="label">colour palette (pick the 3 main colours of the café)</p>
+  <div class="colour-pick">
+    <input type="color" name="colour1" value="{{ f.colour1 or pal[0] or '#b9d3fb' }}">
+    <input type="color" name="colour2" value="{{ f.colour2 or pal[1] or '#fde99a' }}">
+    <input type="color" name="colour3" value="{{ f.colour3 or pal[2] or '#ffffff' }}">
+  </div>
+
+  <button class="btn">{{ 'save changes' if editing else ('add it anyway' if matches else 'add café') }}</button>
+  {% if editing %}<a class="link-btn" href="{{ url_for('cafe_page', cafe_id=cafe.id) }}">cancel</a>{% endif %}
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const latBox = document.getElementById("lat");
+  const lngBox = document.getElementById("lng");
+  const msg = document.getElementById("find-msg");
+
+  const map = L.map("pick-map");
+  addTiles(map);
+  let pin = null;  // no pin until there's a position
+
+  // put the pin at a spot (or move it there) and remember it in the hidden boxes
+  function placePin(lat, lng) {
+    if (!pin) {
+      pin = L.marker([lat, lng], { draggable: true }).addTo(map);
+      // after dragging, save where it was dropped
+      pin.on("dragend", () => placePin(pin.getLatLng().lat, pin.getLatLng().lng));
+    }
+    pin.setLatLng([lat, lng]);
+    latBox.value = lat.toFixed(6);
+    lngBox.value = lng.toFixed(6);
+    checkSimilar();  // a cafe right where the pin is might already exist
+  }
+
+  // ---- "already on Oshi Collective?" while you type (adding only) ----
+  const liveBox = document.getElementById("similar-live");
+  const nameBox = document.getElementById("cafe-name");
+  let waitTimer = null;
+
+  // makes text safe to put in html (a cafe called "<b>hi" shouldn't turn bold)
+  const safe = text => String(text).replace(/[&<>"']/g, ch =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
+
+  function checkSimilar() {
+    if (!liveBox) return;  // editing, not adding - no check
+    // wait until they stop typing for 0.4s, instead of asking the server on every key
+    clearTimeout(waitTimer);
+    waitTimer = setTimeout(async () => {
+      const params = new URLSearchParams({ name: nameBox.value });
+      if (latBox.value) { params.set("lat", latBox.value); params.set("lng", lngBox.value); }
+      const res = await fetch("/cafes/similar?" + params, { headers: { "X-Requested-With": "fetch" } });
+      const data = await res.json();
+      if (!data.matches || !data.matches.length) { liveBox.hidden = true; return; }
+
+      liveBox.innerHTML = "<b>already on Oshi Collective?</b>" + data.matches.map(m => `
+        <a class="dup-item" href="${m.url}">
+          <span class="dup-dots">${m.palette.map(c => `<span style="background:${safe(c)}"></span>`).join("")}</span>
+          <span><b>${safe(m.name)}</b><br><small>${safe(m.where)} · ${safe(m.why)}</small></span>
+          <span class="dup-go">that's it ›</span>
+        </a>`).join("");
+      liveBox.hidden = false;
+    }, 400);
+  }
+  if (nameBox) nameBox.addEventListener("input", checkSimilar);
+
+  // start: on the saved pin if there is one, otherwise on the CBD
+  if (latBox.value && lngBox.value) {
+    placePin(parseFloat(latBox.value), parseFloat(lngBox.value));
+    map.setView([latBox.value, lngBox.value], 17);
+  } else {
+    map.setView(MELBOURNE, 15);
+  }
+
+  // tapping the map moves the pin there
+  map.on("click", e => placePin(e.latlng.lat, e.latlng.lng));
+
+  // "find the street on the map" -> ask our server (/geocode in app.py)
+  document.getElementById("find-btn").addEventListener("click", async () => {
+    const address = document.getElementById("address").value + ", " + document.getElementById("area").value;
+    msg.textContent = "looking...";
+    const res = await fetch("/geocode?q=" + encodeURIComponent(address), {
+      headers: { "X-Requested-With": "fetch" },
+    });
+    const data = await res.json();
+    if (data.login) { window.location = data.login; return; }
+    if (data.error) { msg.textContent = data.error; return; }
+    placePin(data.lat, data.lng);
+    map.setView([data.lat, data.lng], 17);
+    msg.textContent = "found it! drag the pin if it's not exactly right";
+  });
+</script>
+{% endblock %}

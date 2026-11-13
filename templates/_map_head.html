@@ -1,0 +1,34 @@
+{#
+  Leaflet = the free map library we use. it draws the map using
+  OpenStreetMap's map pictures ("tiles"). no account or API key needed.
+  pages with a map do {% include "_map_head.html" %} inside {% block head %}.
+#}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+  // every map on the site uses the same map pictures + credit line
+  // (openstreetmap asks for the credit - please keep it)
+  function addTiles(map) {
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    }).addTo(map);
+  }
+
+  // a round pin split into the cafe's palette colours, like a little pie.
+  // "conic-gradient" is the css that draws the pie slices.
+  function palettePin(colours, size = 30) {
+    const step = 100 / colours.length;
+    const slices = colours.map((c, i) => `${c} ${i * step}% ${(i + 1) * step}%`).join(", ");
+    return L.divIcon({
+      className: "palette-pin",
+      html: `<span style="background: conic-gradient(${slices}); width:${size}px; height:${size}px"></span>`,
+      iconSize: [size, size],
+      iconAnchor: [size / 2, size / 2],
+      popupAnchor: [0, -size / 2],
+    });
+  }
+
+  // middle of the Melbourne CBD - where maps start if there's nothing to show
+  const MELBOURNE = [-37.8136, 144.9631];
+</script>
