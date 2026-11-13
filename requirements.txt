@@ -1,1 +1,4 @@
 flask>=3.0
+
+# only needed to run the tests (tests/ folder):  python -m pytest
+pytest>=8.0

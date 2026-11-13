@@ -4,3 +4,4 @@ __pycache__/
 cafe.db
 secret_key.txt
 static/uploads/*
+.pytest_cache/

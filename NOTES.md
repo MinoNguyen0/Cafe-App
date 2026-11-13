@@ -16,6 +16,31 @@ First time on a new computer (no `.venv` folder yet):
 (`.venv` is a private copy of python just for this project, so installing
 flask doesn't mess with anything else on your computer.)
 
+## Tests
+
+The `tests/` folder checks the whole site automatically (103 checks, about 12 seconds):
+
+    .venv\Scripts\python -m pytest
+
+- all green = everything still works. Run it after you change something!
+- `-v` shows every test name, `tests/test_admin.py` runs just one file
+- the tests use a **throwaway database and uploads folder** and fake map lookups, so they never touch
+  your real `cafe.db` or photos, and don't need internet (see `tests/conftest.py`)
+- each file covers one area: `test_accounts`, `test_cafes`, `test_posts`, `test_admin`, `test_pages`,
+  `test_places`
+- adding a feature? copy a test that's close to it and change it. `amy`, `ben`, `admin` and `browser`
+  are ready-made pretend users (see `conftest.py`)
+
+## Git / GitHub
+
+The code is on https://github.com/MinoNguyen0/Cafe-App. To save + upload your changes:
+
+    git add -A
+    git commit -m "what you changed"
+    git push
+
+`cafe.db`, `secret_key.txt`, `.venv` and uploaded photos are in `.gitignore`, so they never get uploaded.
+
 ## The pages
 
 | url | page | needs login? |

@@ -10,8 +10,9 @@ import os
 import sqlite3
 from flask import g
 
-# keep cafe.db next to this file, no matter which folder you run python from
-DB_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cafe.db")
+# keep cafe.db next to this file, no matter which folder you run python from.
+# OSHI_DB lets the tests use a throwaway database instead (see tests/conftest.py)
+DB_FILE = os.environ.get("OSHI_DB") or os.path.join(os.path.dirname(os.path.abspath(__file__)), "cafe.db")
 
 # once a comment gets this many reports, it's hidden for everyone
 REPORT_LIMIT = 3
